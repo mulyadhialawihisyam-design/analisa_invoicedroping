@@ -3,82 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audit Komprehensif: Category Dropping Success</title>
+    <title>Audit Komprehensif: Full Jam, Closing, Success & Gagal</title>
     <style>
-        :root { --primary: #2c3e50; --accent: #3498db; --closing: #e67e22; --bg: #f4f7f6; --success: #27ae60; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; background-color: var(--bg); font-size: 12px; }
-        .container { max-width: 1500px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-        h2 { color: var(--primary); border-bottom: 2px solid var(--accent); padding-bottom: 10px; margin-top: 0; }
-        .instruction { background: #eef2f7; padding: 10px; border-radius: 6px; margin-bottom: 15px; border-left: 4px solid var(--accent); }
-        textarea { width: 100%; height: 120px; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-family: monospace; box-sizing: border-box; margin-bottom: 15px; }
-        button { background: var(--primary); color: white; border: none; padding: 12px 30px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px; transition: 0.3s; }
-        button:hover { background: #34495e; }
+        :root { --primary: #2c3e50; --accent: #3498db; --closing: #e67e22; --bg: #f4f7f6; --success: #27ae60; --danger: #e74c3c; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; background-color: var(--bg); font-size: 11px; }
+        .container { max-width: 100%; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        h2 { color: var(--primary); border-bottom: 2px solid var(--accent); padding-bottom: 10px; margin-top: 0; font-size: 18px; }
+        textarea { width: 100%; height: 100px; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-family: monospace; box-sizing: border-box; margin-bottom: 10px; }
+        button { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 14px; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        th { background: var(--primary); color: white; padding: 8px 3px; border: 1px solid #34495e; font-size: 10px; }
-        td { padding: 8px 3px; border: 1px solid #ddd; text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th { background: var(--primary); color: white; padding: 6px 2px; border: 1px solid #34495e; font-size: 9px; }
+        td { padding: 6px 2px; border: 1px solid #ddd; text-align: center; font-weight: 600; }
         
-        .group-header { background-color: #f1f4f6; font-weight: bold; color: #555; }
-        .col-jam { font-weight: bold; background: #f8f9fa; border-right: 2px solid #ddd !important; font-size: 11px; }
-        .col-total-hour { background-color: #ebf5fb; font-weight: bold; color: #2980b9; }
-        .col-closing { background-color: #fff4e6; font-weight: bold; color: #d35400; }
-        .col-dropping { background-color: #e8f8f5; font-weight: bold; color: var(--success); }
+        .col-jam { font-weight: bold; background: #f8f9fa; border-right: 2px solid #333 !important; }
+        .col-total-hour { background-color: #ebf5fb; color: #2980b9; border-right: 2px solid #333 !important; }
+        .col-closing { background-color: #fff4e6; color: #d35400; border-right: 2px solid #333 !important; }
+        .col-dropping { background-color: #e8f8f5; color: var(--success); }
+        .col-gagal { background-color: #fdedec; color: var(--danger); }
         
-        .summary-card { background: var(--primary); color: white; padding: 15px; border-radius: 8px; margin: 15px 0; display: flex; justify-content: space-around; }
+        .summary-card { background: var(--primary); color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-around; }
         .stat-box { text-align: center; }
-        .stat-box small { display: block; opacity: 0.8; margin-bottom: 5px; }
-        .stat-box span { font-size: 20px; font-weight: bold; }
+        .stat-box span { font-size: 18px; font-weight: bold; display: block; }
         tr:nth-child(even) { background-color: #fafafa; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Audit Akurasi Invoice: Full Jam vs Closing vs Dropping Success</h2>
-    <div class="instruction">
-        <strong>Format Kolom:</strong> Paste data dari <b>A s/d K</b>. <br>
-        A: Kode CL | C: Kategori | H: Selesai CP | J: Selesai Drop | K: Total Invoice
-    </div>
-
-    <textarea id="inputData" placeholder="Paste Data Excel Anda di sini..."></textarea>
-    <button onclick="prosesAudit()">Jalankan Analisa Data</button>
+    <h2>Akurasi Selesai Chekpoin VS Selesai Droping</h2>
+    
+    <textarea id="inputData" placeholder="Paste Data Excel A s/d K..."></textarea>
+    <button onclick="prosesAudit()">MULAI ANALISA</button>
 
     <div class="summary-card" id="summaryView" style="display:none;">
-        <div class="stat-box">
-            <small>Total Invoice (00-23)</small>
-            <span id="grandTotal">0</span>
-        </div>
-        <div class="stat-box">
-            <small>Total Closing (Menit 45-59)</small>
-            <span id="grandClosing" style="color: #ff9f43;">0</span>
-        </div>
-        <div class="stat-box">
-            <small>Total Dropping Success (M 45-59)</small>
-            <span id="grandDrop" style="color: #58d68d;">0</span>
-        </div>
+        <div class="stat-box"><small>Total IVC (Full)</small><span id="gT">0</span></div>
+        <div class="stat-box"><small>Closing (45-59)</small><span id="gC" style="color: #ff9f43;">0</span></div>
+        <div class="stat-box"><small>Drop Success</small><span id="gD" style="color: #58d68d;">0</span></div>
+        <div class="stat-box"><small>Gagal Drop</small><span id="gG" style="color: #ec7063;">0</span></div>
     </div>
 
     <table id="mainTable" style="display:none;">
         <thead>
-            <tr class="group-header">
+            <tr>
                 <th rowspan="2">JAM</th>
-                <th colspan="4">TOTAL PER JAM (00:00 - 00:59)</th>
-                <th colspan="4">CLOSING 15 MENIT (M 45 - 59)</th>
-                <th colspan="4" style="background: #27ae60;">DROP SUCCESS PER KATEGORI (M 45-59)</th>
+                <th colspan="4" style="background: #34495e;">TOTAL PER JAM (00-59)</th>
+                <th colspan="4" style="background: #e67e22;">CLOSING 15 MENIT (CP 45-59)</th>
+                <th colspan="4" style="background: #27ae60;">DROP SUCCESS (DP 45-59)</th>
+                <th colspan="4" style="background: #e74c3c;">GAGAL DROP (PENDING)</th>
             </tr>
             <tr>
-                <th>SINGLE</th>
-                <th>MULTIPLE</th>
-                <th>BULK</th>
-                <th style="background:#3498db">TOTAL</th>
-                <th>SINGLE</th>
-                <th>MULTIPLE</th>
-                <th>BULK</th>
-                <th style="background:#e67e22">TOTAL</th>
-                <th style="background:#2ecc71">SINGLE</th>
-                <th style="background:#2ecc71">MULTIPLE</th>
-                <th style="background:#2ecc71">BULK</th>
-                <th style="background:#1e8449">TOTAL</th>
+                <th>SGL</th><th>MLT</th><th>BLK</th><th style="background:#2980b9">TOTAL</th>
+                <th>SGL</th><th>MLT</th><th>BLK</th><th style="background:#d35400">TOTAL</th>
+                <th>SGL</th><th>MLT</th><th>BLK</th><th style="background:#1e8449">TOTAL</th>
+                <th>SGL</th><th>MLT</th><th>BLK</th><th style="background:#c0392b">TOTAL</th>
             </tr>
         </thead>
         <tbody id="tableBody"></tbody>
@@ -92,57 +70,48 @@ function prosesAudit() {
 
     const lines = rawData.trim().split('\n');
     const stats = {};
-    
-    // Inisialisasi 24 jam (00-23)
     for (let i = 0; i < 24; i++) {
         let h = (i < 10 ? '0' + i : i).toString();
-        stats[h] = {
-            h_s: 0, h_m: 0, h_b: 0, h_t: 0,
-            c_s: 0, c_m: 0, c_b: 0, c_t: 0,
-            d_s: 0, d_m: 0, d_b: 0, d_t: 0
+        stats[h] = { 
+            hs:0, hm:0, hb:0, ht:0, 
+            cs:0, cm:0, cb:0, ct:0, 
+            ds:0, dm:0, db:0, dt:0 
         };
     }
 
-    let gTotal = 0, gClose = 0, gDrop = 0;
+    let grandT=0, grandC=0, grandD=0;
 
     lines.forEach(line => {
         const col = line.split('\t');
         if (col.length >= 11) {
-            const category = (col[2] || "").toUpperCase(); // Kolom C
-            const timeCP = col[7] ? col[7].split(' ')[1] : null; // Kolom H
-            const timeDP = col[9] ? col[9].split(' ')[1] : null; // Kolom J
-            const ivcQty = parseInt(col[10]) || 0; // Kolom K
+            const cat = (col[2] || "").toUpperCase();
+            const tCP = col[7] ? col[7].split(' ')[1] : null;
+            const tDP = col[9] ? col[9].split(' ')[1] : null;
+            const qty = parseInt(col[10]) || 0;
 
-            if (timeCP) {
-                const [hh, mm] = timeCP.split(':');
-                const min = parseInt(mm);
-
+            if (tCP) {
+                const [hh, mm] = tCP.split(':');
                 if (stats[hh]) {
-                    // 1. Total Jam Penuh
-                    stats[hh].h_t += ivcQty;
-                    gTotal += ivcQty;
-                    if(category.includes("SINGLE")) stats[hh].h_s += ivcQty;
-                    else if(category.includes("MULTIPLE")) stats[hh].h_m += ivcQty;
-                    else if(category.includes("BULK")) stats[hh].h_b += ivcQty;
+                    // 1. Hitung Full Jam
+                    stats[hh].ht += qty; grandT += qty;
+                    if(cat.includes("SINGLE")) stats[hh].hs += qty;
+                    else if(cat.includes("MULTIPLE")) stats[hh].hm += qty;
+                    else if(cat.includes("BULK")) stats[hh].hb += qty;
 
-                    // 2. Closing 15 Menit
-                    if (min >= 45 && min <= 59) {
-                        stats[hh].c_t += ivcQty;
-                        gClose += ivcQty;
-                        if(category.includes("SINGLE")) stats[hh].c_s += ivcQty;
-                        else if(category.includes("MULTIPLE")) stats[hh].c_m += ivcQty;
-                        else if(category.includes("BULK")) stats[hh].c_b += ivcQty;
+                    // 2. Hitung Closing & Success
+                    if (parseInt(mm) >= 45 && parseInt(mm) <= 59) {
+                        stats[hh].ct += qty; grandC += qty;
+                        if(cat.includes("SINGLE")) stats[hh].cs += qty;
+                        else if(cat.includes("MULTIPLE")) stats[hh].cm += qty;
+                        else if(cat.includes("BULK")) stats[hh].cb += qty;
 
-                        // 3. Drop Success per Kategori (Menit 45-59)
-                        if (timeDP) {
-                            const [hhDP, mmDP] = timeDP.split(':');
-                            const minDP = parseInt(mmDP);
-                            if (hhDP === hh && minDP >= 45 && minDP <= 59) {
-                                stats[hh].d_t += ivcQty;
-                                gDrop += ivcQty;
-                                if(category.includes("SINGLE")) stats[hh].d_s += ivcQty;
-                                else if(category.includes("MULTIPLE")) stats[hh].d_m += ivcQty;
-                                else if(category.includes("BULK")) stats[hh].d_b += ivcQty;
+                        if (tDP) {
+                            const [hhD, mmD] = tDP.split(':');
+                            if (hhD === hh && parseInt(mmD) >= 45 && parseInt(mmD) <= 59) {
+                                stats[hh].dt += qty; grandD += qty;
+                                if(cat.includes("SINGLE")) stats[hh].ds += qty;
+                                else if(cat.includes("MULTIPLE")) stats[hh].dm += qty;
+                                else if(cat.includes("BULK")) stats[hh].db += qty;
                             }
                         }
                     }
@@ -153,27 +122,21 @@ function prosesAudit() {
 
     const tbody = document.getElementById('tableBody');
     tbody.innerHTML = '';
-    
     Object.keys(stats).sort().forEach(h => {
         const d = stats[h];
-        const row = `
-            <tr>
-                <td class="col-jam">Jam ${h}:00</td>
-                <td>${d.h_s}</td><td>${d.h_m}</td><td>${d.h_b}</td>
-                <td class="col-total-hour">${d.h_t}</td>
-                <td>${d.c_s}</td><td>${d.c_m}</td><td>${d.c_b}</td>
-                <td class="col-closing">${d.c_t}</td>
-                <td class="col-dropping">${d.d_s}</td>
-                <td class="col-dropping">${d.d_m}</td>
-                <td class="col-dropping">${d.d_b}</td>
-                <td style="background:#1e8449; color:white; font-weight:bold;">${d.d_t}</td>
-            </tr>`;
-        tbody.innerHTML += row;
+        tbody.innerHTML += `<tr>
+            <td class="col-jam">JAM ${h}:00</td>
+            <td>${d.hs}</td><td>${d.hm}</td><td>${d.hb}</td><td class="col-total-hour">${d.ht}</td>
+            <td>${d.cs}</td><td>${d.cm}</td><td>${d.cb}</td><td class="col-closing">${d.ct}</td>
+            <td class="col-dropping">${d.ds}</td><td class="col-dropping">${d.dm}</td><td class="col-dropping">${d.db}</td><td style="background:#1e8449; color:white;">${d.dt}</td>
+            <td class="col-gagal">${d.cs-d.ds}</td><td class="col-gagal">${d.cm-d.dm}</td><td class="col-gagal">${d.cb-d.db}</td><td style="background:#c0392b; color:white;">${d.ct-d.dt}</td>
+        </tr>`;
     });
 
-    document.getElementById('grandTotal').innerText = gTotal.toLocaleString('id-ID');
-    document.getElementById('grandClosing').innerText = gClose.toLocaleString('id-ID');
-    document.getElementById('grandDrop').innerText = gDrop.toLocaleString('id-ID');
+    document.getElementById('gT').innerText = grandT.toLocaleString('id-ID');
+    document.getElementById('gC').innerText = grandC.toLocaleString('id-ID');
+    document.getElementById('gD').innerText = grandD.innerText = grandD.toLocaleString('id-ID');
+    document.getElementById('gG').innerText = (grandC - grandD).toLocaleString('id-ID');
     document.getElementById('summaryView').style.display = 'flex';
     document.getElementById('mainTable').style.display = 'table';
 }
