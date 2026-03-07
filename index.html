@@ -16,12 +16,23 @@
         th { background: var(--primary); color: white; padding: 6px 2px; border: 1px solid #34495e; font-size: 9px; }
         td { padding: 6px 2px; border: 1px solid #ddd; text-align: center; font-weight: 600; }
         
+        .clickable { cursor: pointer; text-decoration: underline; }
+        .clickable:hover { opacity: 0.8; background: rgba(0,0,0,0.1) !important; }
+
         .col-jam { font-weight: bold; background: #f8f9fa; border-right: 2px solid #333 !important; }
         .col-total-hour { background-color: #ebf5fb; color: #2980b9; border-right: 2px solid #333 !important; }
         .col-closing { background-color: #fff4e6; color: #d35400; border-right: 2px solid #333 !important; }
         .col-dropping { background-color: #e8f8f5; color: var(--success); }
         .col-gagal { background-color: #fdedec; color: var(--danger); }
         
+        /* Modal Style */
+        #modalOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center; }
+        .modal-content { background:white; padding:20px; border-radius:10px; width:500px; max-height:80%; overflow-y:auto; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .modal-header { display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #eee; padding-bottom:10px; margin-bottom:10px; }
+        .close-btn { cursor:pointer; font-weight:bold; font-size:20px; color:red; }
+        .detail-item { padding:8px; border-bottom:1px solid #eee; font-size:11px; line-height: 1.4; }
+        .detail-item b { color: var(--primary); }
+
         .summary-card { background: var(--primary); color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-around; }
         .stat-box { text-align: center; }
         .stat-box span { font-size: 18px; font-weight: bold; display: block; }
@@ -29,6 +40,16 @@
     </style>
 </head>
 <body>
+
+<div id="modalOverlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle" style="margin:0; font-size:14px;">Detail Data Audit</h3>
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+        </div>
+        <div id="modalBody"></div>
+    </div>
+</div>
 
 <div class="container">
     <h2>Akurasi Selesai Chekpoin VS Selesai Droping</h2>
@@ -64,19 +85,40 @@
 </div>
 
 <script>
+let detailData = {};
+
+function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
+
+function showDetail(key) {
+    const list = detailData[key] || [];
+    const modalBody = document.getElementById('modalBody');
+    const modalTitle = document.getElementById('modalTitle');
+    
+    modalTitle.innerText = `Log Audit: ${key.replace(/_/g, ' ')}`;
+    modalBody.innerHTML = list.length > 0 ? '' : 'Tidak ada data detail.';
+    
+    list.forEach(item => {
+        modalBody.innerHTML += `
+            <div class="detail-item">
+                <b>${item.cl}</b> [${item.cat}]<br>
+                <span style="color:#d35400">CP: ${item.cpFull}</span><br>
+                <span style="color:#27ae60">DP: ${item.dpFull || 'BELUM DROP'}</span>
+            </div>`;
+    });
+    
+    document.getElementById('modalOverlay').style.display = 'flex';
+}
+
 function prosesAudit() {
     const rawData = document.getElementById('inputData').value;
     if(!rawData.trim()) return;
 
+    detailData = {}; 
     const lines = rawData.trim().split('\n');
     const stats = {};
     for (let i = 0; i < 24; i++) {
         let h = (i < 10 ? '0' + i : i).toString();
-        stats[h] = { 
-            hs:0, hm:0, hb:0, ht:0, 
-            cs:0, cm:0, cb:0, ct:0, 
-            ds:0, dm:0, db:0, dt:0 
-        };
+        stats[h] = { hs:0, hm:0, hb:0, ht:0, cs:0, cm:0, cb:0, ct:0, ds:0, dm:0, db:0, dt:0 };
     }
 
     let grandT=0, grandC=0, grandD=0;
@@ -84,13 +126,16 @@ function prosesAudit() {
     lines.forEach(line => {
         const col = line.split('\t');
         if (col.length >= 11) {
-            const cat = (col[2] || "").toUpperCase();
-            const tCP = col[7] ? col[7].split(' ')[1] : null;
-            const tDP = col[9] ? col[9].split(' ')[1] : null;
+            const clNo = col[0]; // Kolom A
+            const cat = (col[2] || "").toUpperCase(); // Kolom C
+            const rawCP = col[7] || ""; // Kolom H (Format: 07/03/2026 10:47:41)
+            const rawDP = col[9] || ""; // Kolom J
             const qty = parseInt(col[10]) || 0;
 
-            if (tCP) {
-                const [hh, mm] = tCP.split(':');
+            const timeCPPart = rawCP.split(' ')[1]; // Ambil 10:47:41
+            
+            if (timeCPPart) {
+                const [hh, mm] = timeCPPart.split(':');
                 if (stats[hh]) {
                     // 1. Hitung Full Jam
                     stats[hh].ht += qty; grandT += qty;
@@ -98,20 +143,42 @@ function prosesAudit() {
                     else if(cat.includes("MULTIPLE")) stats[hh].hm += qty;
                     else if(cat.includes("BULK")) stats[hh].hb += qty;
 
-                    // 2. Hitung Closing & Success
-                    if (parseInt(mm) >= 45 && parseInt(mm) <= 59) {
+                    // 2. Filter Closing (Menit 45-59)
+                    if (parseInt(mm) >= 45) {
                         stats[hh].ct += qty; grandC += qty;
                         if(cat.includes("SINGLE")) stats[hh].cs += qty;
                         else if(cat.includes("MULTIPLE")) stats[hh].cm += qty;
                         else if(cat.includes("BULK")) stats[hh].cb += qty;
 
-                        if (tDP) {
-                            const [hhD, mmD] = tDP.split(':');
-                            if (hhD === hh && parseInt(mmD) >= 45 && parseInt(mmD) <= 59) {
+                        // Simpan Detail Closing dengan format tanggal lengkap
+                        const cKey = `Closing_Jam_${hh}`;
+                        if(!detailData[cKey]) detailData[cKey] = [];
+                        detailData[cKey].push({ 
+                            cl: clNo, 
+                            cat: cat, 
+                            cpFull: rawCP, 
+                            dpFull: rawDP 
+                        });
+
+                        // 3. Filter Success Drop (Di jam yang sama, Menit 45-59)
+                        if (rawDP) {
+                            const timeDPPart = rawDP.split(' ')[1];
+                            const [hhD, mmD] = timeDPPart.split(':');
+                            if (hhD === hh && parseInt(mmD) >= 45) {
                                 stats[hh].dt += qty; grandD += qty;
                                 if(cat.includes("SINGLE")) stats[hh].ds += qty;
                                 else if(cat.includes("MULTIPLE")) stats[hh].dm += qty;
                                 else if(cat.includes("BULK")) stats[hh].db += qty;
+
+                                // Simpan Detail Success
+                                const sKey = `Success_Jam_${hh}`;
+                                if(!detailData[sKey]) detailData[sKey] = [];
+                                detailData[sKey].push({ 
+                                    cl: clNo, 
+                                    cat: cat, 
+                                    cpFull: rawCP, 
+                                    dpFull: rawDP 
+                                });
                             }
                         }
                     }
@@ -127,15 +194,18 @@ function prosesAudit() {
         tbody.innerHTML += `<tr>
             <td class="col-jam">JAM ${h}:00</td>
             <td>${d.hs}</td><td>${d.hm}</td><td>${d.hb}</td><td class="col-total-hour">${d.ht}</td>
-            <td>${d.cs}</td><td>${d.cm}</td><td>${d.cb}</td><td class="col-closing">${d.ct}</td>
-            <td class="col-dropping">${d.ds}</td><td class="col-dropping">${d.dm}</td><td class="col-dropping">${d.db}</td><td style="background:#1e8449; color:white;">${d.dt}</td>
-            <td class="col-gagal">${d.cs-d.ds}</td><td class="col-gagal">${d.cm-d.dm}</td><td class="col-gagal">${d.cb-d.db}</td><td style="background:#c0392b; color:white;">${d.ct-d.dt}</td>
+            <td>${d.cs}</td><td>${d.cm}</td><td>${d.cb}</td>
+            <td class="col-closing clickable" onclick="showDetail('Closing_Jam_${h}')">${d.ct}</td>
+            <td class="col-dropping">${d.ds}</td><td class="col-dropping">${d.dm}</td><td class="col-dropping">${d.db}</td>
+            <td class="clickable" style="background:#1e8449; color:white;" onclick="showDetail('Success_Jam_${h}')">${d.dt}</td>
+            <td class="col-gagal">${d.cs-d.ds}</td><td class="col-gagal">${d.cm-d.dm}</td><td class="col-gagal">${d.cb-d.db}</td>
+            <td style="background:#c0392b; color:white;">${d.ct-d.dt}</td>
         </tr>`;
     });
 
     document.getElementById('gT').innerText = grandT.toLocaleString('id-ID');
     document.getElementById('gC').innerText = grandC.toLocaleString('id-ID');
-    document.getElementById('gD').innerText = grandD.innerText = grandD.toLocaleString('id-ID');
+    document.getElementById('gD').innerText = grandD.toLocaleString('id-ID');
     document.getElementById('gG').innerText = (grandC - grandD).toLocaleString('id-ID');
     document.getElementById('summaryView').style.display = 'flex';
     document.getElementById('mainTable').style.display = 'table';
